@@ -396,3 +396,26 @@ private _action = ["TestName", "Test Name",{},{}] call ace_interact_menu_fnc_cre
 	(_x select 0) setVariable ["acex_headless_blacklist", true, true]; 
 } forEach fullCrew (curatorSelected # 0 # 0);
 
+//ares custom curator modules
+["ACEX Headless", "Blacklist Group", {
+	// Get all the passed parameters
+	params [["_position", [0,0,0], [[]], 3], ["_objectUnderCursor", objNull, [objNull]]];
+
+	// Log the parameters
+	systemChat str _position;
+	systemChat str _objectUnderCursor;
+	
+	group _objectUnderCursor setVariable ["acex_headless_blacklist", true, true];
+}] call Ares_fnc_RegisterCustomModule;
+["ACEX Headless", "Unblacklist Group", {
+	params [["_position", [0,0,0], [[]], 3], ["_objectUnderCursor", objNull, [objNull]]];
+	group _objectUnderCursor setVariable ["acex_headless_blacklist", false, true];
+}] call Ares_fnc_RegisterCustomModule;
+
+//disable FSM
+["AI Behaviour", "Unblacklist Group", {
+	params [["_position", [0,0,0], [[]], 3], ["_objectUnderCursor", objNull, [objNull]]];
+	_objectUnderCursor disableAI "FSM";
+}] call Ares_fnc_RegisterCustomModule;
+
+(group curatorSelected # 0 # 0) setGroupIdGlobal ["Atlas 1"];

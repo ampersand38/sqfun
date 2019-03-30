@@ -37,6 +37,6 @@ _this spawn
 	//make player once more vulnerable
 	[{{_x allowDamage true} forEach _this;}, [_plane, _pilot], 2] call CBA_fnc_waitAndExecute;
 	
-	//deleteVehicle _planeFX;
 	[{deleteVehicle (_this # 0);}, [_planeFX], 10] call CBA_fnc_waitAndExecute;
+	[{(_this # 0) setDamage 1;}, [_ejectionSeatForce], 60] call CBA_fnc_waitAndExecute;
 };
