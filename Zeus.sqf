@@ -43,12 +43,12 @@ _m addMagazine (secondaryWeaponMagazine _m select 0);
 
 
 //create and assign Zeus
-zcurator = (createGroup sideLogic) createUnit ["ModuleCurator_F", [0,0,0], [], 0, "NONE"];
-zcurator = (allCurators select 0); 
+private _curator = (allCurators select 0); 
+private _curator = (createGroup sideLogic) createUnit ["ModuleCurator_F", [0,0,0], [], 0, "NONE"];
 {
 	if (name _x == "CW4 Ampers") then {
-		unassignCurator zcurator;
-		_x assignCurator zcurator;
+		unassignCurator _curator;
+		_x assignCurator _curator;
 	};
 } forEach allPlayers;
 {
@@ -90,7 +90,7 @@ _g setCombatMode "YELLOW";
 _g setFormation "DIAMOND";
 _g setVariable ["Vcm_Disable",true, true];
 {
-	if ((floor random (10+1)) < 11) then {
+	if ((floor random (10+1)) < 5) then {
 		_return pushBack "Y";
 		_c = selectRandom _classes;
 		_u = _g createUnit [_c, [0, 0, 0], [], 0, "NONE"];
@@ -174,11 +174,12 @@ _curator addEventHandler ["CuratorWaypointPlaced", {
 } count (allUnits - switchableUnits - playableUnits);
 
 //invincible and infinite mags
-{
 	_x allowDamage false;
+{
+	_x removeAllEventHandlers "Reloaded";
 	_x addEventHandler ["Reloaded", {
 		params ["_unit", "_weapon", "_muzzle", "_newMag", "_oldMag"];
-		if !(isNil _oldMag) then {
+		if !(_oldMag isEqualTo []) then {
 			_unit addMagazineGlobal (_oldMag select 0);
 		};
 	}];
@@ -254,6 +255,19 @@ this addAction [
 	"driver _target == _this"
 ];
 
+player addAction [
+	"PULL!",
+	{
+		[cursorObject, (player vectorModelToWorld [0,100,100] )] remoteExecute ["setVelocity", cursorObject];
+	},
+	[],
+	10,
+	true,
+	false,
+	"",
+	"cursorObject isKindOf 'AllVehicles'"
+];
+
 [vehicle (curatorSelected select 0 select 0), 1] remoteExec ["setVehicleAmmo", (curatorSelected select 0 select 0)];
 
 //turret watch mouse pos
@@ -297,6 +311,16 @@ private _t = nearestObject [_c, "HOUSE"];
 	_house setVariable ["bis_disabled_" + _door, _locked, true];
 	[_house, _door, _locked]
 };
+
+//toggle door
+private _doorInfo = [100] call ace_interaction_fnc_getDoor;
+_doorInfo params ["_house", "_door"];
+private _getDoorAnimations = _doorInfo call ace_interaction_fnc_getDoorAnimations;
+_getDoorAnimations params ["_animations"];
+private _phase = [0, 1] select (_house animationPhase (_animations select 0) < 0.5);
+{_house animate [_x, _phase]; false} count _animations;
+
+
 
 if (hasInterface) then {
 	player addItemToUniform "ACE_EarPlugs"; 
@@ -413,9 +437,47 @@ private _action = ["TestName", "Test Name",{},{}] call ace_interact_menu_fnc_cre
 }] call Ares_fnc_RegisterCustomModule;
 
 //disable FSM
-["AI Behaviour", "Unblacklist Group", {
+["AI Behaviour", "Disable FSM", {
 	params [["_position", [0,0,0], [[]], 3], ["_objectUnderCursor", objNull, [objNull]]];
 	_objectUnderCursor disableAI "FSM";
 }] call Ares_fnc_RegisterCustomModule;
 
 (group curatorSelected # 0 # 0) setGroupIdGlobal ["Atlas 1"];
+
+removeAllActions box;
+box addAction ["Grab on", {params ['_target', '_caller', '_actionId', '_arguments'];[_caller, _target] call BIS_fnc_attachToRelative;}]
+
+{
+	[_x, vehicle cc] remoteExec ["moveInCargo", _x];
+} forEach (curatorSelected # 0)
+
+//ladder
+private _StepUpLadder = [
+	"TFT_StepUpLadder",	// * 0: Action name <STRING>
+	"Step up ladder",	// * 1: Name of the action shown in the menu <STRING>
+	"",	// * 2: Icon <STRING>
+	"",	// * 3: Statement <CODE>
+	""	// * 4: Condition <CODE>
+] call ace_interact_menu_fnc_createAction;
+plate attachTo [_ladder, [0,0,0.13+_currentStep*0.3]];
+private _currentStep = ({_x==1} count ([3,4,5,6,7,8,9,10,11] apply {_ladder animationPhase (format["extract_%1", _x]) })) - 1;
+
+private _ladder = ladder;
+private _platform = "Box_C_UAV_06_F" createVehicle [0,0,0];
+_platform attachTo [player, [0,0,boundingBoxReal _platform # 1 # 2]];
+detach _platform;
+[_platform, _ladder, true] call BIS_fnc_attachToRelative;
+_platform = "Box_C_UAV_06_F" createVehicle [0,0,0];
+_platform attachTo [player, [0,-2 * boundingBoxReal _platform # 1 # 1,boundingBoxReal _platform # 1 # 2]];
+detach _platform;
+[_platform, _ladder, true] call BIS_fnc_attachToRelative;
+player action ["ladderOff",ladder];
+
+
+_arr = [];
+{
+	_x attachTo [pl, [0, (-2) * (_forEachIndex+1), 0]];
+	_arr pushBack [0, (-2) * (_forEachIndex+1), 0];
+} forEach (allPlayers - [hc_1, hc_2, hc_3, pl]);
+_arr
+

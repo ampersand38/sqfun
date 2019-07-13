@@ -1,5 +1,5 @@
 //[_pilot] call AMP_fnc_EjectionSeat
-
+AMP_fnc_EjectionSeat = {
 _this spawn 
 {
 	params ["_pilot"];
@@ -39,4 +39,4 @@ _this spawn
 	
 	[{deleteVehicle (_this # 0);}, [_planeFX], 10] call CBA_fnc_waitAndExecute;
 	[{(_this # 0) setDamage 1;}, [_ejectionSeatForce], 60] call CBA_fnc_waitAndExecute;
-};
+};};

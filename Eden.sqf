@@ -2,6 +2,9 @@ Public 787343
 doesAnyPasswordWork?
 76561197998806051
 
+this setVariable ["acex_headless_blacklist", true, true];
+this setVariable ["Vcm_Disable", true, true];
+
 this disableAI "PATH"; this setUnitPos "UP";
 this disableAI "PATH"; this setUnitPos "MIDDLE";
 this disableAI "PATH"; this setUnitPos "DOWN";
@@ -13,43 +16,26 @@ this disableAI "PATH"; this setUnitPos "DOWN";
 this setDamage 0.6;
 [this, true, 10000, true] call ace_medical_fnc_setUnconscious;
 
-(group this) setVariable ["Vcm_Disable", true, true];
 
 //unit nearest to cursor
 nearestObject [screenToWorld (getMousePosition), ["Man"]]
 
-// occupy building
-
+// move group into building
 private ["_classes","_c","_b","_bps","_u","_d","_g","_return"];
 _return = [];
-_classes = (get3DENSelected "object") apply {typeOf _x};
-
 private _position0 = positionCameraToWorld [0, 0, 0]; 
 private _position1 = positionCameraToWorld [0, 0, 100]; 
 private _intersections = lineIntersectsSurfaces [AGLToASL _position0, AGLToASL _position1, cameraOn, objNull, true, 1, "GEOM"];
 if (_intersections isEqualTo []) then {_b = nearestBuilding (screenToWorld getMousePosition);}
 else {_b = _intersections select 0 select 2;};
-
 _bps = (_b) buildingPos -1;
 _return pushBack format ["%1, %2", typeOf _b, count _bps];
-_g = grpNull;
-
+_g = get3DENSelected "group" # 0;
 {
 	if ((floor random (10+1)) < 11) then {
 		_return pushBack "Y";
-		_c = selectRandom _classes;
-		if (_g isEqualTo grpNull) then {
-			_u = create3DENEntity ["Object", _c, _x];
-			_g = group _u;
-			_g deleteGroupWhenEmpty true;
-			//_g set3DENAttribute ["dynamicSimulation", true];
-			//_g set3DENAttribute ["behaviour", "Safe"];
-			_g set3DENAttribute ["combatMode", "Open Fire"];
-			_g set3DENAttribute ["formation", "Diamond"];
-			_g set3DENAttribute ["Init", "this setVariable ['Vcm_Disable', true];"];
-		} else {
-			_u = _g create3DENEntity ["Object", _c, _x];
-		};
+		_u = units _g select _forEachIndex;
+		_u set3DENAttribute ["Position", _x];
 		_d = _b getDir _x;
 		_u set3DENAttribute ["Rotation", [0, 0, _d]];
 		//_u set3DENAttribute ["Init", "this disableAI 'PATH'; this setUnitPos 'UP';"];
@@ -303,10 +289,16 @@ private _t = nearestObject [_c, "HOUSE"];
 
 //"head", "body", "arm_l", "arm_r", "leg_l", "leg_r"
 //"bullet", "grenade", "explosive", "shell", "vehiclecrash", "backblast", "stab", "punch", "falling", "ropeburn", "unknown"
-[this, 0.4, "head", "vehiclecrash"] call ace_medical_fnc_addDamageToUnit;
-[this, 0.5, "body", "vehiclecrash"] call ace_medical_fnc_addDamageToUnit;
-[this, 0.3, "leg_l", "vehiclecrash"] call ace_medical_fnc_addDamageToUnit;
-[this, 0.4, "leg_r", "vehiclecrash"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.1, "head", "punch"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.1, "body", "punch"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.7, "body", "bullet"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.7, "leg_r", "bullet"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.1, "leg_l", "punch"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.1, "leg_r", "punch"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.1, "leg_l", "falling"] call ace_medical_fnc_addDamageToUnit;
+[this, 0.1, "leg_r", "falling"] call ace_medical_fnc_addDamageToUnit;
+
+
 
 {
 	[_x, 0.4, "leg_r", "bullet"] call ace_medical_fnc_addDamageToUnit;
@@ -369,28 +361,25 @@ private _values = [];
 
 //inventory gear 
 { 
-    if (_x isKindOf "CAManBase") then 
-    {	
-        _x linkItem "ACE_NVG_Wide";
-        _x addWeapon "ACE_Vector";
-		
-		//earplugs
-		if !("ACE_EarPlugs" in uniformItems _x) then {
-			_x addItemToUniform "ACE_EarPlugs";
-		};
-		
-		//etool
-		if (backpack _x == "") then {
-			_x addBackpack "B_AssaultPack_blk";
-		};
-		if !("ACE_EntrenchingTool" in backpackItems _x) then {
-			_x addItemToBackpack "ACE_EntrenchingTool";
-		};
-		
-        save3DENInventory [_x]; 
-    }; 
+	_x linkItem "ACE_NVG_Wide";
+	_x addWeapon "ACE_Vector";
+	
+	//earplugs
+	if !("ACE_EarPlugs" in uniformItems _x) then {
+		_x addItemToUniform "ACE_EarPlugs";
+	};
+	
+	//etool
+	if (backpack _x == "") then {
+		_x addBackpack "B_AssaultPack_blk";
+	};
+	if !("ACE_EntrenchingTool" in backpackItems _x) then {
+		_x addItemToBackpack "ACE_EntrenchingTool";
+	};
+	
+	save3DENInventory [_x]; 
 } 
-forEach get3DENSelected "object";
+forEach (get3DENSelected "object") select {_x isKindOf "CAManBase"};
  
 
 // The following script takes every Land_Wreck_Ural_F on the map and turns them into a Land_Wreck_Slammer_F, and every Land_Wreck_Hunter_F into a Land_Wreck_T72_hull_F.
@@ -415,7 +404,54 @@ collect3DENHistory {
     forEach (all3DENEntities select 0);
 };
 
+player addAction ["Spectate", {
+// * 0: Spectator state of local client <BOOL> (default: true)
+// * 1: Force interface <BOOL> (default: true)
+// * 2: Hide player (if alive) <BOOL> (default: true)
+	[true, false, false] call ace_spectator_fnc_setSpectator;
+}];
 
 
+// occupy building
+private ["_classes","_c","_b","_bps","_u","_d","_g","_return"];
+_return = [];
+_classes = (get3DENSelected "object") apply {typeOf _x};
+
+private _position0 = positionCameraToWorld [0, 0, 0]; 
+private _position1 = positionCameraToWorld [0, 0, 100]; 
+private _intersections = lineIntersectsSurfaces [AGLToASL _position0, AGLToASL _position1, cameraOn, objNull, true, 1, "GEOM"];
+if (_intersections isEqualTo []) then {_b = nearestBuilding (screenToWorld getMousePosition);}
+else {_b = _intersections select 0 select 2;};
+
+_bps = (_b) buildingPos -1;
+_return pushBack format ["%1, %2", typeOf _b, count _bps];
+_return
+_g = createGroup _side;
+_g deleteGroupWhenEmpty true;
+_g setCombatMode "YELLOW";
+_g setFormation "DIAMOND";
+_g setVariable ["Vcm_Disable",true, true];
+{
+	if ((floor random (10+1)) < 11) then {
+		_return pushBack "Y";
+		_c = selectRandom _classes;
+		_u = _g createUnit [_c, [0, 0, 0], [], 0, "NONE"];
+		_u setVariable ["acex_headless_blacklist", true, true];
+		_u setPosATL _x;
+		_d = _b getDir _x;
+		_u setDir _d;
+		_u disableAI "PATH";
+		_u setUnitPos "UP";
+		doStop _u;
+	} else {
+		_return pushBack "N";
+	};
+} forEach _bps;
+_return
 
 
+//set3DENAttribute
+{ 
+	_x set3DENAttribute ["Init", "[this, 0.7, 'body', 'bullet'] call ace_medical_fnc_addDamageToUnit; [this, 0.7, 'leg_r', 'bullet'] call ace_medical_fnc_addDamageToUnit;"];
+} forEach ((get3DENSelected "object") select {_x isKindOf "CAManBase"});
+ 
