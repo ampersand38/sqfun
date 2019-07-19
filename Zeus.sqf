@@ -169,6 +169,14 @@ _curator addEventHandler ["CuratorWaypointPlaced", {
 }];
 
 
+
+_curator addEventHandler ["CuratorWaypointPlaced", {
+	params ["_curator", "_group", "_waypointID"];
+	{
+		[_x, "Path"] remoteExec ["enableAI", _x];
+	} forEach units _group;
+}];
+
 {
 	_x allowDamage true;
 } count (allUnits - switchableUnits - playableUnits);
@@ -480,4 +488,13 @@ _arr = [];
 	_arr pushBack [0, (-2) * (_forEachIndex+1), 0];
 } forEach (allPlayers - [hc_1, hc_2, hc_3, pl]);
 _arr
+
+
+
+
+player allowDamage false;
+
+player allowDamage true;
+ch47 setHitpointDamage ["HitEngine", 1];
+
 
