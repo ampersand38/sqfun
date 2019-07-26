@@ -9,6 +9,8 @@ this disableAI "PATH"; this setUnitPos "UP";
 this disableAI "PATH"; this setUnitPos "MIDDLE";
 this disableAI "PATH"; this setUnitPos "DOWN";
 
+this doWatch [0,0,0];
+
 {_x disableAI "PATH"; } forEach units this;
 
 [objNull,[_this],true] call ace_captives_fnc_moduleSurrender;
@@ -454,4 +456,6 @@ _return
 { 
 	_x set3DENAttribute ["Init", "[this, 0.7, 'body', 'bullet'] call ace_medical_fnc_addDamageToUnit; [this, 0.7, 'leg_r', 'bullet'] call ace_medical_fnc_addDamageToUnit;"];
 } forEach ((get3DENSelected "object") select {_x isKindOf "CAManBase"});
+ 
+ 
  

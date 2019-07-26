@@ -29,8 +29,7 @@ private _p = screenToWorld [0.5, 0.5];
 private _u = (curatorSelected select 0 select 0);
 if (local _u) then {
 	_u disableAI "PATH"; 
-	_u setUnitPos "MIDDLE";
-}
+	_u setUnitPos "MIDDLE";}
 (objectFromNetId (netId (curatorSelected SELECT 0 SELECT 0))) setPos screenToWorld [0.5,0.5];
 
 
@@ -308,17 +307,15 @@ private _t = nearestObject [_c, "HOUSE"];
 } count selectionNames _t;
 
 //toggle lock on the door the camera is pointed at
-([100] call ace_interaction_fnc_getDoor) call {
-	params ["_house", "_door"];
-	private _locked = _house getVariable ("bis_disabled_" + _door);
-	if (isNil "_locked") then {
-		_locked = true;
-	} else {
-		_locked = !_locked;
-	};
-	_house setVariable ["bis_disabled_" + _door, _locked, true];
-	[_house, _door, _locked]
+([100] call ace_interaction_fnc_getDoor) params ["_house", "_door"];
+private _locked = _house getVariable ("bis_disabled_" + _door);
+if (isNil "_locked") then {
+	_locked = true;
+} else {
+	_locked = !_locked;
 };
+_house setVariable ["bis_disabled_" + _door, _locked, true];
+[_house, _door, _locked]
 
 //toggle door
 private _doorInfo = [100] call ace_interaction_fnc_getDoor;
@@ -327,6 +324,14 @@ private _getDoorAnimations = _doorInfo call ace_interaction_fnc_getDoorAnimation
 _getDoorAnimations params ["_animations"];
 private _phase = [0, 1] select (_house animationPhase (_animations select 0) < 0.5);
 {_house animate [_x, _phase]; false} count _animations;
+
+//toggle light
+private _position0 = positionCameraToWorld [0, 0, 0];
+private _position1 = positionCameraToWorld [0, 0, 100];
+private _intersections = lineIntersectsSurfaces [AGLToASL _position0, AGLToASL _position1, cameraOn, objNull, true, 1, "GEOM"];
+if (_intersections isEqualTo []) exitWith {[objNull, ""]};
+private _lamp = _intersections select 0 select 2;
+_lamp switchLight (["ON", "OFF"] select (lightIsOn _lamp == "ON"))
 
 
 
@@ -409,9 +414,6 @@ staticLineJump = {
 	} forEach fullCrew [_transport, "cargo", false];
 };
 
-{
-	[_x, _x] call ACE_medical_fnc_treatmentAdvanced_fullHeal;
-} forEach allPlayers;
 [player, player] call ACE_medical_fnc_treatmentAdvanced_fullHeal;
 
 _vehicle addItemCargo ["ACE_rope36", 10];
